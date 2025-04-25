@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { PieChart } from '../..components/pieChart/PieChart'
-import { VertBarChart } from '../..components/vertBarChart/VertBarChart'
+import { PieChart } from '../../components/pieChart/PieChart'
+import { VertBarChart } from '../../components/vertBarChart/VertBarChart'
 import { Link, useNavigate } from "react-router-dom";
-import AuthStatus from "../..components/auth/authStatus/AuthStatus";
+import AuthStatus from "../../components/auth/authStatus/AuthStatus";
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import BudgetOverview from '../..components/BudgetOverview/BudgetOverview';
-import BudgetNotes from '../..components/budgetNotes/BudgetNotes';
+import BudgetOverview from '../../components/BudgetOverview/BudgetOverview';
+import BudgetNotes from '../../components/budgetNotes/BudgetNotes';
 
 const Profile = () => {
   const { user } = useAuth();
