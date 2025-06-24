@@ -17,7 +17,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/budgets")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "https://mybudgetapp-fe.netlify.app/"}, allowCredentials = "true")
 public class BudgetController {
 
     @Autowired

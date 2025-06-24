@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "https://mybudgetapp-fe.netlify.app/"}, allowCredentials = "true")
 public class AuthenticationController {
 
     @Autowired
