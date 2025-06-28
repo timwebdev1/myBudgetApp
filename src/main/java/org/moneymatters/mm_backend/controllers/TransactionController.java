@@ -21,7 +21,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/transactions")
-@CrossOrigin(origins = {"http://localhost:3000", "https://mybudgetapp-fe.netlify.app"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "https://mybudgetapp-fe.netlify.app", "https://mybudgetapp-production.up.railway.app"}, allowCredentials = "true")
 public class TransactionController {
 
     @Autowired
