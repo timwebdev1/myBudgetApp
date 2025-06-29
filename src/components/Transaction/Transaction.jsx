@@ -145,6 +145,32 @@ function Transaction() {
       tag_id: Number(tag_id),
     };
 
+    // Debugging code:
+      console.log("=== DEBUGGING TRANSACTION REQUEST ===");
+  console.log("Transaction object:", JSON.stringify(transaction, null, 2));
+  console.log("Params object:", JSON.stringify(params, null, 2));
+  console.log("Full URL will be:", `https://mybudgetapp-production.up.railway.app/api/transactions/add`);
+  console.log("Query params:", new URLSearchParams(params).toString());
+  console.log("User object:", user);
+  console.log("Budget ID:", budget_id, "Type:", typeof budget_id);
+  console.log("Tag ID:", tag_id, "Type:", typeof tag_id);
+  console.log("Is Splits:", isSplits);
+  console.log("Splits array:", splits);
+
+  try {
+    const response = await transService.add(transaction, params);
+    // ... rest of your code
+  } catch (error) {
+    console.error("=== FULL ERROR DETAILS ===");
+    console.error("Error object:", error);
+    console.error("Error response:", error.response);
+    console.error("Error response data:", error.response?.data);
+    console.error("Error response status:", error.response?.status);
+    console.error("Error response headers:", error.response?.headers);
+    alert("Error saving transaction. Check console for details.");
+  }
+};
+
     try {
       console.log(JSON.stringify(transaction));
       const response = await transService.add(transaction, params);
