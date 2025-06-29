@@ -145,11 +145,13 @@ function Transaction() {
       console.log(JSON.stringify(transaction));
       const response = await transService.add(transaction, params);
 
-      // window.location.reload(); **RELOAD MAYBE INTERFERING WITH NAVIGATION
-      
       alert("Transaction saved successfully!");
 
-      navigate("/profile");
+      if (budget_id) {
+        navigate(`/transaction/budget/${budget_id}`);
+      } else {
+        navigate("/profile");
+      }
     } catch (error) {
       console.error("Transaction error:", error);
       alert("Error saving transaction. Please try again.");
