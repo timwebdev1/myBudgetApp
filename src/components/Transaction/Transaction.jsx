@@ -149,8 +149,6 @@ function Transaction() {
       console.log("=== DEBUGGING TRANSACTION REQUEST ===");
   console.log("Transaction object:", JSON.stringify(transaction, null, 2));
   console.log("Params object:", JSON.stringify(params, null, 2));
-  console.log("Full URL will be:", `https://mybudgetapp-production.up.railway.app/api/transactions/add`);
-  console.log("Query params:", new URLSearchParams(params).toString());
   console.log("User object:", user);
   console.log("Budget ID:", budget_id, "Type:", typeof budget_id);
   console.log("Tag ID:", tag_id, "Type:", typeof tag_id);
@@ -159,7 +157,9 @@ function Transaction() {
 
   try {
     const response = await transService.add(transaction, params);
-    // ... rest of your code
+    window.location.reload();
+    alert("Transaction saved successfully!");
+    navigate("/transaction/add");
   } catch (error) {
     console.error("=== FULL ERROR DETAILS ===");
     console.error("Error object:", error);
@@ -169,7 +169,7 @@ function Transaction() {
     console.error("Error response headers:", error.response?.headers);
     alert("Error saving transaction. Check console for details.");
   }
-};
+    
 
     try {
       console.log(JSON.stringify(transaction));
