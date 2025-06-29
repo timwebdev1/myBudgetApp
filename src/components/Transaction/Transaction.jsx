@@ -1,9 +1,9 @@
-import { split } from 'postcss/lib/list';
-import React, {useState, useEffect} from 'react';
-import api from '../../services/api.js';
-import {useNavigate, Link} from "react-router-dom";
-import { useAuth } from '../../context/AuthContext';
-import TagManagement from '../Tag/TagManagement.jsx';
+import { split } from "postcss/lib/list";
+import React, { useState, useEffect } from "react";
+import api from "../../services/api.js";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import TagManagement from "../Tag/TagManagement.jsx";
 
 function Transaction() {
   const { user } = useAuth();
@@ -15,42 +15,39 @@ function Transaction() {
   const [isIncome, setIsIncome] = useState(false);
   const [recurringDate, setRecurring] = useState(null);
   const [tag_id, setTag_Id] = useState("");
-  const [splits, setSplits] = useState([]); 
+  const [splits, setSplits] = useState([]);
   const [splitAmount, setSplitAmount] = useState("");
   const [isSplits, setIsSplits] = useState(false);
   const navigate = useNavigate();
   const { transService, budgetService } = api;
 
-
-
   useEffect(() => {
-    const budgetList = async() =>{
+    const budgetList = async () => {
+      if (!user?.userId) {
+        console.error("User ID is not available");
+        return;
+      }
 
-        if (!user?.userId) {
-            console.error("User ID is not available");
-            return;
-        }
-
-      try{
+      try {
         const result = await budgetService.getByUser(user.userId);
         setBudgetList(result);
       } catch (error) {
         console.error("Error fetching budget data", error);
       }
     };
-    if(user?.userId) {
-        budgetList();
+    if (user?.userId) {
+      budgetList();
     } else {
-        console.log("User is not defined. Please log in.");
+      console.log("User is not defined. Please log in.");
     }
-  } ,[user]);
+  }, [user]);
 
   const handleChange = (e) => {
     setBudgetId(e.target.value);
-  }
+  };
 
-    if (!user) {
-        console.log("User is not defined. Please log in.");
+  if (!user) {
+    console.log("User is not defined. Please log in.");
     return (
       <div className="flex justify-center items-center min-h-screen bg-black">
         <div className="bg-white p-8 rounded-lg shadow-lg">
@@ -68,16 +65,15 @@ function Transaction() {
     );
   }
 
-
   const handleAddSplit = (e) => {
     e.preventDefault();
     if (splitAmount && tag_id) {
-      
       const newSplit = {
         splitAmount: parseFloat(splitAmount),
-        tag:parseInt(tag_id),
-         tagName : document.querySelector(`[value="${tag_id}"]`)?.textContent || "Unknown Tag",
-
+        tag: parseInt(tag_id),
+        tagName:
+          document.querySelector(`[value="${tag_id}"]`)?.textContent ||
+          "Unknown Tag",
       };
       setSplits([...splits, newSplit]);
       setSplitAmount("");
@@ -114,19 +110,19 @@ function Transaction() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-  if (!user || !user.userId) {
-    console.error("Error: User is not defined in handleSubmit!");
-    alert("Authentication issue detected. Please log in again.");
-    return;
-  }
+    if (!user || !user.userId) {
+      console.error("Error: User is not defined in handleSubmit!");
+      alert("Authentication issue detected. Please log in again.");
+      return;
+    }
 
-  const validAmount = parseFloat(amount);
+    const validAmount = parseFloat(amount);
 
-  if (isNaN(validAmount)) {
-    console.error("Amount is invalid")
-    alert("Invalid amount provided.");
-    return;
-  }
+    if (isNaN(validAmount)) {
+      console.error("Amount is invalid");
+      alert("Invalid amount provided.");
+      return;
+    }
 
     const transaction = {
       amount: validAmount,
@@ -134,7 +130,7 @@ function Transaction() {
       isRecurring,
       isIncome,
       recurringDate,
-      splits : isSplits? splits : [],
+      splits: isSplits ? splits : [],
       isSplits,
     };
 
@@ -145,41 +141,19 @@ function Transaction() {
       tag_id: Number(tag_id),
     };
 
-    // Debugging code:
-      console.log("=== DEBUGGING TRANSACTION REQUEST ===");
-  console.log("Transaction object:", JSON.stringify(transaction, null, 2));
-  console.log("Params object:", JSON.stringify(params, null, 2));
-  console.log("User object:", user);
-  console.log("Budget ID:", budget_id, "Type:", typeof budget_id);
-  console.log("Tag ID:", tag_id, "Type:", typeof tag_id);
-  console.log("Is Splits:", isSplits);
-  console.log("Splits array:", splits);
+    try {
+      console.log(JSON.stringify(transaction));
+      const response = await transService.add(transaction, params);
 
-  try {
-    const response = await transService.add(transaction, params);
-    window.location.reload();
-    alert("Transaction saved successfully!");
+      // window.location.reload(); **RELOAD MAYBE INTERFERING WITH NAVIGATION
+      
+      alert("Transaction saved successfully!");
 
-    alert("Transaction saved successfully!");
-
-    navigate("/profile");
-    
-  } catch (error) {
-    console.error("=== FULL ERROR DETAILS ===");
-    console.error("Error object:", error);
-    console.error("Error response:", error.response);
-    console.error("Error response data:", error.response?.data);
-    console.error("Error response status:", error.response?.status);
-    console.error("Error response headers:", error.response?.headers);
-
-        // More specific error message
-    const errorMessage = error.response?.data?.message || 
-                        error.response?.statusText || 
-                        error.message || 
-                        "Unknown error occurred";
-
-     alert(`Error saving transaction: ${error.response?.status || 'Unknown'} - ${errorMessage}`);
-  }
+      navigate("/profile");
+    } catch (error) {
+      console.error("Transaction error:", error);
+      alert("Error saving transaction. Please try again.");
+    }
   };
 
   return (
@@ -192,12 +166,19 @@ function Transaction() {
           <div className="space-y-4 text-black">
             <div>
               <label className="block">Budget</label>
-              <select id="budgetSelect" value={budget_id} onChange={handleChange} class = "text-gray bg-white">
-            <option value=''>Please Select a Budget</option>
-            {budgetList.map(budget => (
-            <option key={budget.id} value={budget.id}>{budget.name}</option>
-            ))}
-          </select>
+              <select
+                id="budgetSelect"
+                value={budget_id}
+                onChange={handleChange}
+                class="text-gray bg-white"
+              >
+                <option value="">Please Select a Budget</option>
+                {budgetList.map((budget) => (
+                  <option key={budget.id} value={budget.id}>
+                    {budget.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -263,7 +244,7 @@ function Transaction() {
                   checked={isSplits}
                   onChange={() => {
                     setIsSplits(!isSplits);
-                    setSplits([]); 
+                    setSplits([]);
                   }}
                 />
                 <span>Split this transaction across multiple tags?</span>
@@ -301,7 +282,6 @@ function Transaction() {
               />
             </div>
 
-          
             <div className="flex space-x-4 mt-6">
               <button
                 type="submit"
