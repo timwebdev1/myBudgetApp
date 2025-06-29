@@ -159,7 +159,11 @@ function Transaction() {
     const response = await transService.add(transaction, params);
     window.location.reload();
     alert("Transaction saved successfully!");
-    navigate("/transaction/add");
+
+    alert("Transaction saved successfully!");
+
+    navigate("/profile");
+    
   } catch (error) {
     console.error("=== FULL ERROR DETAILS ===");
     console.error("Error object:", error);
@@ -167,20 +171,15 @@ function Transaction() {
     console.error("Error response data:", error.response?.data);
     console.error("Error response status:", error.response?.status);
     console.error("Error response headers:", error.response?.headers);
-    alert("Error saving transaction. Check console for details.");
-  }
-    
 
-    try {
-      console.log(JSON.stringify(transaction));
-      const response = await transService.add(transaction, params);
-      window.location.reload()
-      alert("Transaction saved successfully!");
-      navigate("/transaction/add");
-    } catch (error) {
-      console.error("Transaction error:", error);
-      alert("Error saving transaction. Please try again.");
-    }
+        // More specific error message
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.statusText || 
+                        error.message || 
+                        "Unknown error occurred";
+
+     alert(`Error saving transaction: ${error.response?.status || 'Unknown'} - ${errorMessage}`);
+  }
   };
 
   return (
