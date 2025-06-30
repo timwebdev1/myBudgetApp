@@ -4,7 +4,19 @@ import { Pie } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export function PieChart({ monthlyExpenses }) {
+export function PieChart({ monthlyExpenses = [] }) {
+// Handle empty or invalid data
+if (!Array.isArray(monthlyExpenses) || monthlyExpenses.length === 0) {
+    return (
+        <div className='size-4/12 flex justify-center items-center min-h-screen'>
+            <div className='text-center'>
+                <p>No expense data available</p>
+                <p className='text-sm text-gray-500'>Select a budget to view expense breakdown</p>
+            </div>
+        </div>
+    );
+}
+
     const labels = []
     const values = []
 
@@ -14,6 +26,17 @@ export function PieChart({ monthlyExpenses }) {
             values.push(expense[tag])
         }
     }
+
+// Check if we have valid data after processing
+if (labels.length === 0 || values.length === 0) {
+    return (
+        <div className='size-4/12 flex justify-center items-center min-h-screen'>
+            <div className='text-center'>
+                <p>No expense data for this month</p>
+            </div>
+        </div>
+    );
+}
 
     const data = {
         labels: labels,
@@ -51,10 +74,9 @@ export function PieChart({ monthlyExpenses }) {
     };
 
     return (
-        <>
-            <div className='size-4/12 flex justify-start items-center min-h-screen'>
+                    <div className='size-4/12 flex justify-start items-center min-h-screen'>
                 <Pie data={data} />
             </div>
-        </>
-    )
+    );
 }
+

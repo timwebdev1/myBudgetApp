@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+// import axios from 'axios'
 import { PieChart } from '../../components/pieChart/PieChart'
 import { VertBarChart } from '../../components/vertBarChart/VertBarChart'
 import { Link, useNavigate } from "react-router-dom";
@@ -12,7 +12,7 @@ import BudgetNotes from '../../components/budgetNotes/BudgetNotes';
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { transService, budgetService } = api;
+  const { transService, budgetService, tagService } = api;
 
   const [budgetName, setBudgetName] = useState("")
   const [monthlyExpenses, setMonthlyExpenses] = useState([])
@@ -22,51 +22,77 @@ const Profile = () => {
   const [budgetList, setBudgetList] = useState([]);
   const [monthIncomeTotal, setMonthIncomeTotal] = useState(0)
   const [monthExpensesTotal, setMonthExpensesTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const user_id = user.userId;
- 
-  
+  const user_id = user?.userId;
 
   useEffect(() => {
     const loadBudgetList = async () => {
-
-      if(user){
+      if(user && user_id){
         try {
+          setLoading(true)
+          setError(null)
         const result = await budgetService.getByUser(user_id);
         setBudgetList(result);
       } catch (error) {
         console.error("Error fetching budget data", error);
+        setError("Failed to load budgets")
+      } finally {
+        setLoading(false)
       }
     }
     };
     loadBudgetList();
-  }, [user, budgetService]);
+  }, [user, user_id, budgetService]);
 
   const handleChange = (e) => {
     setBudgetId(e.target.value);
+
+    // Reset previous data when changing budget
+    setMonthlyExpenses([])
+    setYearlyIncome([])
+    setYearlyExpenses([])
   }
 
   const findMonthlyExpenses = async () => {
     try {
       setMonthlyExpenses([])
 
-      const fetchData = await axios.get(`http://localhost:8080/api/transactions/budget/${budget_id}`)
-      const tagsData = await axios.get(`http://localhost:8080/api/tags/user/${user_id}`)
+      // Removed axios and transitioning to api service instead
+      // const fetchData = await axios.get(`http://localhost:8080/api/transactions/budget/${budget_id}`)
+      // const tagsData = await axios.get(`http://localhost:8080/api/tags/user/${user_id}`)
 
+      const fetchData = await transService.getAll(budget_id, {});
+      const tagsData = await tagService.getUserTags(user_id);
+      
       let date = new Date().toISOString()
       let yearMonth = date.slice(0, 7)
 
-      let filterArr = fetchData.data.filter(obj => !obj.income && obj.createdDate.startsWith(yearMonth))
+      // Handle the transformed data structure from transService.getAll
+      let allTransactions = [];
+      fetchData.forEach(transaction => {
+        if (transaction.hasChildren && transaction.splits) {
+          // Add child transactions
+          allTransactions.push(...transaction.splits.map(split => ({
+            ...split,
+            income: transaction.income,
+            createdData: transaction.createdDate
+          })));
+        } else {
+          allTransactions.push(transaction);
+        }
+      });
 
-      let allExpenses = [...filterArr]
+      let filterArr = allTransactions.filter(obj => !obj.income && obj.createdDate.startsWith(yearMonth))
 
       let tagExpenseObj = {}
 
-      allExpenses.forEach(item => 
+      filterArr.forEach(item => 
         {
           if(item.tagId != null)
           {
-          let tag = tagsData.data.find(tag =>  tag.id === item.tagId).name
+          let tag = tagsData.find(tag =>  tag.id === item.tagId)?.name || 'Unknown'
 
           if (tagExpenseObj[tag]) {
             tagExpenseObj[tag] += item.amount
@@ -74,10 +100,10 @@ const Profile = () => {
             tagExpenseObj[tag] = item.amount
           }
           }
-          else{
+          else if (item.splits) {
             item.splits.forEach(split =>{
               var tagIdParsed = parseInt(split.tag.substring(7,8));
-              let tag = tagsData.data.find(tag =>  tag.id === tagIdParsed).name
+              let tag = tagsData.find(tag =>  tag.id === tagIdParsed)?.name || 'Unknown'
 
               if (tagExpenseObj[tag]) {
                 tagExpenseObj[tag] += split.splitAmount
@@ -95,20 +121,36 @@ const Profile = () => {
 
       setMonthlyExpenses(expenses)
     } catch (e) {
-      console.error(e)
+      console.error("Error fetching monthly expenses:", e)
+      setError("Failed to load monthly expenses")
     }
   }
 
   const findYearlyData = async () => {
     try {
-      const fetchData = await axios.get(`http://localhost:8080/api/transactions/budget/${budget_id}`)
+      setError(null)
+      // const fetchData = await axios.get(`http://localhost:8080/api/transactions/budget/${budget_id}`)
+      const fetchData = await transService.getAll(budget_id, {});
 
       let date = new Date()
       let year = date.getFullYear().toString()
 
-      let filterYearIncome = fetchData.data.filter(obj => obj.income && obj.createdDate.startsWith(year))
+      // Handle the transformed data structure
+      let allTransactions = [];
+      fetchData.forEach(transaction => {
+        if (transaction.hasChildren && transaction.splits) {
+          allTransactions.push(...transaction.splits.map(split => ({
+            ...split,
+            income: transaction.income,
+            createdDate: transaction.createdDate
+          })));
+        } else {
+          allTransactions.push(transaction);
+        }
+      });
 
-      let filterYearExpenses = fetchData.data.filter(obj => !obj.income && obj.createdDate.startsWith(year))
+      let filterYearIncome = allTransactions.filter(obj => obj.income && obj.createdDate.startsWith(year))
+      let filterYearExpenses = allTransactions.filter(obj => !obj.income && obj.createdDate.startsWith(year))
 
       let yearIncome = []
       let yearExpenses = []
@@ -122,7 +164,6 @@ const Profile = () => {
         }
 
         let monthIncome = filterYearIncome.filter(obj => obj.createdDate.startsWith(monthYear))
-
         let monthExpenses = filterYearExpenses.filter(obj => obj.createdDate.startsWith(monthYear))
 
         let totalMonthIncome = 0
@@ -143,20 +184,36 @@ const Profile = () => {
       setYearlyIncome(yearIncome)
       setYearlyExpenses(yearExpenses)
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching yearly data:", e);
+      setError("Failed to load yearly data")
     }
   };
 
   const findMonthData = async () => {
     try {
-      const fetchData = await axios.get(`http://localhost:8080/api/transactions/budget/${budget_id}`)
+      setError(null)
+      // const fetchData = await axios.get(`http://localhost:8080/api/transactions/budget/${budget_id}`)
+      const fetchData = await transService.getAll(budget_id, {});
 
       let date = new Date().toISOString()
       let yearMonth = date.slice(0, 7)
 
-      let filterMonthIncome = fetchData.data.filter(obj => obj.income && obj.createdDate.startsWith(yearMonth))
+      // Handle the transformed data structure
+      let allTransactions = [];
+      fetchData.forEach(transaction => {
+        if (transaction.hasChildren && transaction.splits) {
+          allTransactions.push(...transaction.splits.map(split => ({
+            ...split,
+            income: transaction.income,
+            createdDate: transaction.createdDate
+          })));
+        } else {
+          allTransactions.push(transactions);
+        }
+      });
 
-      let filterMonthExpenses = fetchData.data.filter(obj => !obj.income && obj.createdDate.startsWith(yearMonth))
+      let filterMonthIncome = allTransactions.filter(obj => obj.income && obj.createdDate.startsWith(yearMonth))
+      let filterMonthExpenses = allTransactions.filter(obj => !obj.income && obj.createdDate.startsWith(yearMonth))
 
       let totalMonthIncome = 0
       let totalMonthExpenses = 0
@@ -172,23 +229,46 @@ const Profile = () => {
       setMonthIncomeTotal(totalMonthIncome)
       setMonthExpensesTotal(totalMonthExpenses)
     } catch (e) {
-      console.log(e);
+      console.error("Error fetching month data:", e);
+      setError("Failed to load monthly totals")
     }
   }
 
   useEffect(() => {
-    if (budget_id) {
-      findMonthlyExpenses();
-      findYearlyData()
+    if (budget_id && user_id) {
+      const loadAllData = async () => {
+        setLoading(true)
+        try {
+          await Promise.all([
+      findMonthlyExpenses(),
+      findYearlyData(),
       findMonthData()
+          ]);
+        } catch (error) {
+          console.error("Error loading data:", error)
+        } finally {
+          setLoading(false)
+        }
+      } 
+      loadAllData();
     }
-  }, [budget_id]);
+  }, [budget_id, user_id]);
+
+  if (!user) {
+    return <div>Please log in to access your profile.</div>
+  }
 
 
   return (
     <>
       <h1 className='text-6xl'>Profile: {user.username}</h1>
       <p>{budgetName}</p>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       <div>
         <Link to="/budget/add">
@@ -198,18 +278,29 @@ const Profile = () => {
           <button className="my-8 mx-2 px-4 rounded-full px-4 py-2 bg-blue-500 text-white">Add Transaction</button>
         </Link>
       </div>
+      
       <div>
-        <select id="budgetSelect" value={budget_id} onChange={handleChange} className="mx-4 ">
+        <select id="budgetSelect" value={budget_id} onChange={handleChange} className="mx-4" disabled={loading}>
           <option value=''>Please Select a Budget</option>
           {budgetList.map(budget => (
             <option key={budget.id} value={budget.id}>{budget.name}</option>
           ))}
         </select>
-        <button className="rounded-full px-4 py-2 bg-blue-500 text-white" onClick={(e) => { console.log("Navigating to: ", `/transaction/budget/${budget_id}`); navigate(`/transaction/budget/${budget_id}`) }}>Search Transactions</button>
+        <button 
+          className="rounded-full px-4 py-2 bg-blue-500 text-white" 
+          onClick={(e) => { 
+            console.log("Navigating to: ", `/transaction/budget/${budget_id}`); 
+            navigate(`/transaction/budget/${budget_id}`) 
+          }}
+          disabled={!budget_id}
+        >
+          Search Transactions
+        </button>
       </div>
 
-      <div class="flex space-x-20">
+      {loading && <div>Loading data...</div>}
 
+      <div className="flex space-x-20">
         <PieChart budgetName={budgetName} monthlyExpenses={monthlyExpenses} />
         <BudgetNotes monthIncomeTotal={monthIncomeTotal} monthExpensesTotal={monthExpensesTotal} />
         <VertBarChart yearlyIncome={yearlyIncome} yearlyExpenses={yearlyExpenses} />
