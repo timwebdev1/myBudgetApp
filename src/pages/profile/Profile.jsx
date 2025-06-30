@@ -77,7 +77,7 @@ const Profile = () => {
           allTransactions.push(...transaction.splits.map(split => ({
             ...split,
             income: transaction.income,
-            createdData: transaction.createdDate
+            createdDate: transaction.createdDate
           })));
         } else {
           allTransactions.push(transaction);
@@ -208,7 +208,7 @@ const Profile = () => {
             createdDate: transaction.createdDate
           })));
         } else {
-          allTransactions.push(transactions);
+          allTransactions.push(transaction);
         }
       });
 
